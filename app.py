@@ -734,20 +734,7 @@ with col_right:
     height=250
 )
         
-        for _, row in recent_data.iterrows():
-            html_table += f"""
-                <tr>
-                    <td>{row['timestamp']}</td>
-                    <td>{row['category']}</td>
-                    <td>{row['brand']}</td>
-                    <td>${row['price']:.1f}</td>
-                    <td>{row['co2']:.1f}kg</td>
-                </tr>
-            """
-        
        
-        
-        st.markdown(html_table, unsafe_allow_html=True)
     else:
         st.info("Start logging purchases to see your environmental impact dashboard.")
         st.markdown(create_co2_bar_chart({}), unsafe_allow_html=True)
