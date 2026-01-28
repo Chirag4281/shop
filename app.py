@@ -155,35 +155,65 @@ def create_co2_bar_chart(data_dict):
     if not data_dict:
         data_dict = {"Clothing": 85, "Electronics": 120, "Food": 65, "Furniture": 95}
     
-    categories = list(data_dict.keys())
-    values = list(data_dict.values())
-    max_val = max(values) if values else 100
+    # 使用Streamlit的bar_chart
+    chart_data = pd.DataFrame({
+        'Category': list(data_dict.keys()),
+        'CO₂ (kg)': list(data_dict.values())
+    }).set_index('Category')
     
-    bars_html = ""
-    colors = ["#2E8B57", "#3CB371", "#66CDAA", "#8FBC8F", "#20B2AA"]
+    # 直接在Streamlit中显示图表
+    st.bar_chart(chart_data, color="#2E8B57", height=300)
     
-    for i, (cat, val) in enumerate(zip(categories, values)):
-        height = (val / max_val) * 200
-        color = colors[i % len(colors)]
-        bars_html += f"""
-        <div style="display:flex; flex-direction:column; align-items:center; margin:0 15px;">
-            <div style="width:40px; height:{height}px; background:{color}; 
-                        border-radius:8px 8px 0 0; position:relative;">
-                <div style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); 
-                            font-weight:bold; color:#333; white-space:nowrap;">{val}kg</div>
-            </div>
-            <div style="margin-top:10px; font-weight:bold; color:#2E8B57;">{cat}</div>
-        </div>
-        """
-    
-    return f"""
-    <div style="display:flex; justify-content:center; align-items:flex-end; 
-                height:250px; margin:20px 0; padding:20px; background:#F8FFF8; 
-                border-radius:15px; border:2px solid #E0F2E0;">
-        {bars_html}
-    </div>
-    """
+    # 或者使用metric显示
+    return ""
 
+# 在仪表板部分替换这个调用
+if st.session_state.purchase_log:
+    # ... 其他代码 ...
+    
+    category_data = df_log.groupby('category')['co2'].sum().to_dict()
+    
+    # 创建并显示图表
+    st.markdown("**Carbon Impact by Category:**")
+    
+    if category_data:
+        # 方法1: 使用streamlit原生图表
+        chart_df = pd.DataFrame({
+            'Category': list(category_data.keys()),
+            'CO₂ (kg)': list(category_data.values())
+        })
+        
+        # 显示为条形图
+        st.bar_chart(chart_df.set_index('Category'), color="#2E8B57", height=250)
+        
+        # 或者显示为柱状图
+        chart_data = pd.DataFrame({
+            'Category': list(category_data.keys()),
+            'CO₂ Emissions': list(category_data.values())
+        })
+        
+        # 添加颜色映射
+        colors = ["#2E8B57", "#3CB371", "#66CDAA", "#8FBC8F", "#20B2AA"]
+        color_map = {}
+        for i, cat in enumerate(chart_data['Category']):
+            if i < len(colors):
+                color_map[cat] = colors[i]
+        
+        # 使用altair（如果允许）或者保持简单
+        st.markdown("**Detailed Breakdown:**")
+        for category, value in category_data.items():
+            color = colors[list(category_data.keys()).index(category) % len(colors)]
+            st.markdown(f"""
+            <div style="display:flex; align-items:center; margin:10px 0; padding:10px; background:{color}10; border-radius:10px;">
+                <div style="width:20px; height:20px; background:{color}; border-radius:4px; margin-right:15px;"></div>
+                <div style="flex-grow:1;">
+                    <div style="font-weight:600; color:#2E8B57;">{category}</div>
+                </div>
+                <div style="font-weight:700; color:#333;">{value:.0f} kg</div>
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.info("Add purchases to see category breakdown")
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap');
