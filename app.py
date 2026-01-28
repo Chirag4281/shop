@@ -745,11 +745,7 @@ with col_right:
                 </tr>
             """
         
-        html_table += """
-                </tbody>
-            </table>
-        </div>
-        """
+       
         
         st.markdown(html_table, unsafe_allow_html=True)
     else:
