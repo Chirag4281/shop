@@ -155,16 +155,16 @@ def create_co2_bar_chart(data_dict):
     if not data_dict:
         data_dict = {"Clothing": 85, "Electronics": 120, "Food": 65, "Furniture": 95}
     
-    # 使用Streamlit的bar_chart
+    
     chart_data = pd.DataFrame({
         'Category': list(data_dict.keys()),
         'CO₂ (kg)': list(data_dict.values())
     }).set_index('Category')
     
-    # 直接在Streamlit中显示图表
+   
     st.bar_chart(chart_data, color="#2E8B57", height=300)
     
-    # 或者使用metric显示
+    
     return ""
 
 # 在仪表板部分替换这个调用
@@ -723,6 +723,7 @@ with col_right:
         
         category_data = df_log.groupby('category')['co2'].sum().to_dict()
         st.markdown(create_co2_bar_chart(category_data), unsafe_allow_html=True)
+        
         st.markdown('<p style="font-weight:600; margin-top:20px;">Recent Purchases:</p>', unsafe_allow_html=True)
         recent_data = df_log.tail(5)[['timestamp', 'category', 'brand', 'price', 'co2']].copy()
         recent_data['timestamp'] = recent_data['timestamp'].dt.strftime('%m/%d %H:%M')
@@ -731,7 +732,8 @@ with col_right:
     recent_data.style.format({'price': '${:.1f}', 'co2': '{:.1f} kg'}),
     use_container_width=True,
     height=250
-)  
+)
+        
         for _, row in recent_data.iterrows():
             html_table += f"""
                 <tr>
