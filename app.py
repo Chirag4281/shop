@@ -723,20 +723,15 @@ with col_right:
         
         category_data = df_log.groupby('category')['co2'].sum().to_dict()
         st.markdown(create_co2_bar_chart(category_data), unsafe_allow_html=True)
+        st.markdown('<p style="font-weight:600; margin-top:20px;">Recent Purchases:</p>', unsafe_allow_html=True)
+        recent_data = df_log.tail(5)[['timestamp', 'category', 'brand', 'price', 'co2']].copy()
+        recent_data['timestamp'] = recent_data['timestamp'].dt.strftime('%m/%d %H:%M')
         
-       st.markdown("**Recent Purchases:**")
-    
-    # 准备数据显示
-    recent_data = df_log.tail(5)[['timestamp', 'category', 'brand', 'price', 'co2']].copy()
-    recent_data['timestamp'] = recent_data['timestamp'].dt.strftime('%m/%d %H:%M')
-    
-    # 创建自定义样式的DataFrame显示
-    st.dataframe(
-        recent_data.style.format({'price': '${:.1f}', 'co2': '{:.1f} kg'}),
-        use_container_width=True,
-        height=250
-    )
-        
+        st.dataframe(
+    recent_data.style.format({'price': '${:.1f}', 'co2': '{:.1f} kg'}),
+    use_container_width=True,
+    height=250
+)  
         for _, row in recent_data.iterrows():
             html_table += f"""
                 <tr>
