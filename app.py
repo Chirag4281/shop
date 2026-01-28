@@ -1,278 +1,564 @@
 import streamlit as st
 import pandas as pd
-import datetime
-import random
-import json
-import time
-from collections import defaultdict
+import datetime as dt
+import random as rd
+import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
+import turtle
+import io
+from PIL import Image, ImageDraw, ImageFont
+import math
 
-st.set_page_config(page_title="ShopImpact", layout="wide", page_icon="🌍")
+st.set_page_config(page_title="ShopImpact", layout="wide", page_icon="🌿", initial_sidebar_state="collapsed")
 
-if "purchases" not in st.session_state:
-    st.session_state.purchases = []
+if 'purchase_history' not in st.session_state:
+    st.session_state.purchase_history = []
 
-if "eco_tips" not in st.session_state:
-    st.session_state.eco_tips = [
-        "Did you know bamboo has a lower footprint?",
-        "Buying second-hand reduces waste by 80%",
-        "Local produce saves transportation emissions",
-        "Plant-based products often have lower CO₂ impact",
-        "Reusable bags can save hundreds of plastic bags yearly"
-    ]
+if 'achievement_collection' not in st.session_state:
+    st.session_state.achievement_collection = []
 
-if "badges" not in st.session_state:
-    st.session_state.badges = []
+if 'current_co2' not in st.session_state:
+    st.session_state.current_co2 = 0.0
 
-if "motivational_quotes" not in st.session_state:
-    st.session_state.motivational_quotes = [
-        "Every green choice counts!",
-        "You're making the planet smile!",
-        "Sustainable shopping is smart shopping!",
-        "Your choices inspire others!",
-        "Small steps lead to big changes!"
-    ]
+if 'eco_insights_index' not in st.session_state:
+    st.session_state.eco_insights_index = 0
 
-product_multipliers = {
-    "Clothing": {"fast_fashion": 3.2, "ethical_brand": 1.2, "second_hand": 0.8},
-    "Electronics": {"new": 4.5, "refurbished": 2.1, "used": 1.8},
-    "Food": {"imported": 2.8, "local": 1.2, "organic": 1.0},
-    "Furniture": {"new_plastic": 3.5, "wood": 2.2, "upcycled": 1.0},
-    "Cosmetics": {"chemical": 2.5, "natural": 1.5, "zero_waste": 0.9}
+environmental_factors = {
+    "Fashion": {"fast_fashion": 4.2, "ethical": 1.5, "vintage": 0.6},
+    "Electronics": {"new": 5.1, "refurbished": 2.3, "repaired": 1.2},
+    "Food & Beverage": {"imported": 3.4, "local": 1.3, "organic": 0.9},
+    "Home Decor": {"mass_produced": 3.8, "handmade": 1.7, "upcycled": 0.8},
+    "Personal Care": {"conventional": 2.7, "natural": 1.4, "package_free": 0.7}
 }
 
-greener_alternatives = {
-    "Clothing": ["Patagonia", "Thrift stores", "Reformation", "Organic cotton brands"],
-    "Electronics": ["Refurbished Apple", "Fairphone", "Energy Star rated"],
-    "Food": ["Local farmers market", "Organic brands", "Plant-based options"],
-    "Furniture": ["Reclaimed wood", "Vintage stores", "IKEA sustainable line"],
-    "Cosmetics": ["Lush", "Ethique", "Package-free shops"]
+sustainable_brands = {
+    "Fashion": ["Patagonia", "Reformation", "Kotn", "Tentree", "Pangaia"],
+    "Electronics": ["Fairphone", "Framework", "Teracube", "Shiftphone"],
+    "Food & Beverage": ["Imperfect Foods", "Thrive Market", "Local Harvest"],
+    "Home Decor": ["Sabai Design", "The Citizenry", "VivaTerra"],
+    "Personal Care": ["Ethique", "Plaine Products", "Meow Meow Tweet"]
 }
 
-badge_rules = {
-    "Eco Saver": {"threshold": 50, "message": "Monthly footprint under 50kg CO₂"},
-    "Low Impact Shopper": {"count": 5, "message": "5+ eco-friendly purchases"},
-    "Green Warrior": {"streak": 7, "message": "7 consecutive green choices"},
-    "Budget Eco": {"saving": 200, "message": "Saved $200+ with green alternatives"},
-    "Community Influencer": {"shares": 3, "message": "Shared 3+ tips with friends"}
+achievement_criteria = {
+    "Eco Pioneer": {"threshold": 3, "desc": "First sustainable purchases"},
+    "Carbon Crusader": {"threshold": 100, "desc": "Reduced 100kg CO₂"},
+    "Green Visionary": {"threshold": 10, "desc": "10+ eco purchases"},
+    "Conscious Consumer": {"threshold": 500, "desc": "$500 green spending"},
+    "Planet Protector": {"threshold": 50, "desc": "50% lower footprint"}
 }
+
+eco_wisdom = [
+    "Bamboo absorbs 35% more CO₂ than equivalent trees",
+    "Circular fashion reduces water usage by 20,000L per kg",
+    "Local produce travels 90% fewer miles",
+    "Refurbished electronics save 80% raw materials",
+    "Package-free shopping eliminates 300g plastic weekly"
+]
+
+inspirational_messages = [
+    "Small choices create seismic shifts",
+    "Your cart votes for the world you want",
+    "Sustainability is the ultimate innovation",
+    "Every purchase plants a seed of change",
+    "Conscious consumption rewrites futures"
+]
+
+def create_turtle_eco_leaf(size=100):
+    buffer = io.BytesIO()
+    
+    canvas_width = size * 2
+    canvas_height = size * 2
+    
+    screen = turtle.TurtleScreen(turtle.TurtleGraphicsError)
+    t = turtle.RawTurtle(screen)
+    
+    img = Image.new('RGB', (canvas_width, canvas_height), color=(240, 248, 240))
+    draw = ImageDraw.Draw(img)
+    
+    t.speed(0)
+    t.hideturtle()
+    t.penup()
+    t.goto(0, -size//2)
+    t.pendown()
+    
+    t.fillcolor("#2E8B57")
+    t.begin_fill()
+    
+    for _ in range(2):
+        t.circle(size, 60)
+        t.circle(size//2, 60)
+        t.circle(size, 60)
+        t.circle(size//2, 60)
+    
+    t.end_fill()
+    
+    t.penup()
+    t.goto(0, -size//3)
+    t.pendown()
+    t.color("#8FBC8F")
+    t.width(3)
+    t.setheading(90)
+    t.forward(size)
+    
+    img.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+def create_turtle_footprint(size=80):
+    buffer = io.BytesIO()
+    
+    canvas_width = size * 3
+    canvas_height = size * 3
+    
+    screen = turtle.TurtleScreen(turtle.TurtleGraphicsError)
+    t = turtle.RawTurtle(screen)
+    
+    img = Image.new('RGB', (canvas_width, canvas_height), color=(255, 250, 240))
+    draw = ImageDraw.Draw(img)
+    
+    t.speed(0)
+    t.hideturtle()
+    t.penup()
+    
+    t.goto(0, 0)
+    t.pendown()
+    t.color("#A0522D")
+    t.fillcolor("#DEB887")
+    
+    t.begin_fill()
+    for i in range(5):
+        t.circle(size//4, 180)
+        t.right(108)
+    t.end_fill()
+    
+    for angle in [0, 72, 144, 216, 288]:
+        t.penup()
+        t.goto(0, 0)
+        t.setheading(angle)
+        t.forward(size//2)
+        t.pendown()
+        t.circle(size//8)
+    
+    img.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+def create_turtle_badge(size=60, badge_type="eco"):
+    buffer = io.BytesIO()
+    
+    canvas_width = size * 2
+    canvas_height = size * 2
+    
+    screen = turtle.TurtleScreen(turtle.TurtleGraphicsError)
+    t = turtle.RawTurtle(screen)
+    
+    img = Image.new('RGB', (canvas_width, canvas_height), color=(245, 255, 245))
+    draw = ImageDraw.Draw(img)
+    
+    t.speed(0)
+    t.hideturtle()
+    t.penup()
+    
+    colors = {
+        "eco": ("#228B22", "#32CD32"),
+        "savings": ("#FFD700", "#FFEC8B"),
+        "impact": ("#1E90FF", "#87CEFA")
+    }
+    
+    color1, color2 = colors.get(badge_type, ("#228B22", "#32CD32"))
+    
+    t.goto(0, -size//2)
+    t.pendown()
+    t.color(color1)
+    t.fillcolor(color2)
+    
+    t.begin_fill()
+    for _ in range(8):
+        t.circle(size, 45)
+        t.circle(size//3, 45)
+    t.end_fill()
+    
+    t.penup()
+    t.goto(0, 0)
+    t.color("#FFFFFF")
+    t.write("★", align="center", font=("Arial", size//2, "bold"))
+    
+    img.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+def generate_radial_chart(data):
+    categories = list(data.keys())
+    values = list(data.values())
+    
+    colors = ['#2E8B57', '#3CB371', '#66CDAA', '#8FBC8F', '#20B2AA']
+    
+    fig = go.Figure(data=[go.Pie(
+        labels=categories,
+        values=values,
+        hole=0.4,
+        marker_colors=colors,
+        textinfo='label+percent',
+        insidetextorientation='radial'
+    )])
+    
+    fig.update_layout(
+        showlegend=False,
+        height=300,
+        margin=dict(t=0, b=0, l=0, r=0),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)'
+    )
+    
+    return fig
 
 st.markdown("""
 <style>
-    .main-header {
-        font-size: 3.5rem;
-        color: #2E8B57;
-        text-align: center;
-        margin-bottom: 0;
-        font-weight: 800;
-    }
-    .sub-header {
-        font-size: 1.5rem;
-        color: #556B2F;
-        text-align: center;
-        margin-top: 0;
-        font-weight: 300;
-    }
-    .card {
-        background: linear-gradient(135deg, #F5F5DC, #E8F5E8);
-        border-radius: 20px;
-        padding: 25px;
-        box-shadow: 0 10px 30px rgba(46, 139, 87, 0.15);
-        margin: 15px 0;
-        border-left: 6px solid #2E8B57;
-    }
-    .badge {
-        display: inline-block;
-        background: linear-gradient(45deg, #FFD700, #FFEC8B);
-        color: #8B4513;
-        padding: 8px 18px;
-        border-radius: 50px;
-        margin: 8px;
-        font-weight: bold;
-        box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
-        animation: pulse 2s infinite;
-    }
-    .eco-tip {
-        background: #E0F7FA;
-        border-left: 5px solid #0097A7;
-        padding: 15px;
-        border-radius: 10px;
-        margin: 15px 0;
-        font-style: italic;
-    }
-    .footprint-value {
-        font-size: 2.8rem;
-        color: #D32F2F;
-        font-weight: 900;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-    }
-    .positive {
-        color: #388E3C;
-    }
-    @keyframes pulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-        100% { transform: scale(1); }
-    }
-    .stButton>button {
-        background: linear-gradient(90deg, #2E8B57, #3CB371);
-        color: white;
-        border: none;
-        padding: 12px 28px;
-        border-radius: 30px;
-        font-weight: bold;
-        transition: all 0.3s;
-    }
-    .stButton>button:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 7px 20px rgba(46, 139, 87, 0.4);
-    }
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+
+* {
+    font-family: 'Poppins', sans-serif;
+}
+
+.main-container {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.header-gradient {
+    background: linear-gradient(90deg, #2E8B57 0%, #3CB371 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.glass-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+    padding: 25px;
+    margin-bottom: 25px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glass-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px rgba(31, 38, 135, 0.25);
+}
+
+.eco-badge {
+    display: inline-flex;
+    align-items: center;
+    background: linear-gradient(45deg, #FFD700, #FFEC8B);
+    color: #8B4513;
+    padding: 8px 20px;
+    border-radius: 50px;
+    margin: 8px;
+    font-weight: 600;
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+    animation: badgeGlow 2s infinite alternate;
+    border: 2px solid #FFD700;
+}
+
+.impact-number {
+    font-size: 3rem;
+    font-weight: 800;
+    background: linear-gradient(90deg, #FF416C, #FF4B2B);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+}
+
+.positive-impact {
+    background: linear-gradient(90deg, #00b09b, #96c93d);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.eco-tip-box {
+    background: linear-gradient(135deg, #E0F7FA 0%, #B2EBF2 100%);
+    border-left: 5px solid #0097A7;
+    padding: 20px;
+    border-radius: 15px;
+    margin: 15px 0;
+    animation: slideIn 0.5s ease-out;
+}
+
+.turtle-canvas {
+    border: 2px dashed #2E8B57;
+    border-radius: 15px;
+    padding: 15px;
+    background: #FAFFF5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+}
+
+.purchase-input {
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid #2E8B57;
+    border-radius: 15px;
+    padding: 20px;
+}
+
+.stButton > button {
+    background: linear-gradient(90deg, #2E8B57, #3CB371);
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 25px;
+    font-weight: 600;
+    transition: all 0.3s;
+    box-shadow: 0 4px 15px rgba(46, 139, 87, 0.3);
+}
+
+.stButton > button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(46, 139, 87, 0.4);
+}
+
+.stSelectbox, .stNumberInput, .stTextInput {
+    border-radius: 10px;
+    border: 2px solid #3CB371;
+}
+
+@keyframes badgeGlow {
+    0% { box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3); }
+    100% { box-shadow: 0 4px 25px rgba(255, 215, 0, 0.6); }
+}
+
+@keyframes slideIn {
+    from { transform: translateX(-20px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.animated-title {
+    animation: pulse 2s infinite;
+}
+
+.co2-meter {
+    height: 20px;
+    background: linear-gradient(90deg, #00b09b, #96c93d, #FFD700, #FF416C);
+    border-radius: 10px;
+    margin: 10px 0;
+    overflow: hidden;
+}
+
+.meter-fill {
+    height: 100%;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+    transition: width 1s ease;
+}
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<h1 class="main-header">🌍 ShopImpact</h1>', unsafe_allow_html=True)
-st.markdown('<p class="sub-header">Transform Shopping into Sustainable Action</p>', unsafe_allow_html=True)
+st.markdown('<div class="main-container">', unsafe_allow_html=True)
 
-col1, col2, col3 = st.columns([2, 3, 2])
+st.markdown('<h1 class="header-gradient animated-title" style="text-align:center; font-size:3.5rem;">🌿 ShopImpact</h1>', unsafe_allow_html=True)
+st.markdown('<p style="text-align:center; font-size:1.2rem; color:#556B2F; margin-bottom:30px;">Transform Your Shopping Into Environmental Action</p>', unsafe_allow_html=True)
+
+col1, col2 = st.columns([1, 1])
 
 with col1:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("➕ Add New Purchase")
-    product_type = st.selectbox("Product Type", list(product_multipliers.keys()))
-    brand_type = st.selectbox("Brand Type", ["fast_fashion", "ethical_brand", "second_hand", "new", "refurbished", "used", "imported", "local", "organic", "new_plastic", "wood", "upcycled", "chemical", "natural", "zero_waste"])
-    price = st.number_input("Price ($)", min_value=0.0, step=10.0, value=50.0)
-    brand = st.text_input("Brand Name", "Your Brand")
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.markdown('<h3 style="color:#2E8B57;">➕ Log New Purchase</h3>', unsafe_allow_html=True)
     
-    if st.button("Calculate & Add Purchase"):
-        multiplier = 2.0
-        for cat, types in product_multipliers.items():
-            if brand_type in types:
-                multiplier = types[brand_type]
+    category = st.selectbox("Product Category", list(environmental_factors.keys()))
+    production_type = st.selectbox("Production Type", ["fast_fashion", "ethical", "vintage", "new", "refurbished", "repaired", 
+                                                      "imported", "local", "organic", "mass_produced", "handmade", "upcycled", 
+                                                      "conventional", "natural", "package_free"])
+    purchase_value = st.number_input("Purchase Amount ($)", min_value=1.0, value=50.0, step=10.0)
+    item_brand = st.text_input("Brand/Item Name", value="Sustainable Choice")
+    
+    if st.button("Calculate Environmental Impact", key="calc_btn"):
+        impact_multiplier = 2.5
+        
+        for cat, types in environmental_factors.items():
+            if production_type in types:
+                impact_multiplier = types[production_type]
                 break
         
-        co2_kg = round(price * multiplier, 2)
-        purchase = {
-            "date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
-            "product": product_type,
-            "brand": brand,
-            "brand_type": brand_type,
-            "price": price,
-            "co2_kg": co2_kg,
-            "multiplier": multiplier
+        co2_emission = round(purchase_value * impact_multiplier, 2)
+        
+        new_purchase = {
+            "timestamp": dt.datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "category": category,
+            "type": production_type,
+            "brand": item_brand,
+            "amount": purchase_value,
+            "co2": co2_emission,
+            "multiplier": impact_multiplier
         }
-        st.session_state.purchases.append(purchase)
         
-        if multiplier < 1.5:
+        st.session_state.purchase_history.append(new_purchase)
+        st.session_state.current_co2 += co2_emission
+        
+        if impact_multiplier < 1.5:
             st.balloons()
-            st.success(f"✅ Eco-friendly choice! Only {co2_kg}kg CO₂")
-            if "Low Impact Shopper" not in st.session_state.badges:
-                st.session_state.badges.append("Low Impact Shopper")
+            st.success(f"🌱 Eco-Friendly! Only {co2_emission}kg CO₂")
+            if "Eco Pioneer" not in st.session_state.achievement_collection:
+                st.session_state.achievement_collection.append("Eco Pioneer")
+            
+            leaf_img = create_turtle_eco_leaf()
+            st.image(leaf_img, caption="Eco Leaf Generated with Turtle", use_column_width=True)
         else:
-            st.warning(f"⚠️ Higher impact: {co2_kg}kg CO₂")
+            st.warning(f"⚠️ Impact: {co2_emission}kg CO₂")
+            footprint_img = create_turtle_footprint()
+            st.image(footprint_img, caption="Carbon Footprint Visualization", use_column_width=True)
         
-        st.session_state.last_tip = random.choice(st.session_state.eco_tips)
-        st.markdown(f'<div class="eco-tip">💡 {st.session_state.last_tip}</div>', unsafe_allow_html=True)
+        current_tip = eco_wisdom[st.session_state.eco_insights_index % len(eco_wisdom)]
+        st.session_state.eco_insights_index += 1
+        
+        st.markdown(f'<div class="eco-tip-box">💡 {current_tip}</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
     
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("🏆 Your Badges")
-    if st.session_state.badges:
-        for badge in st.session_state.badges:
-            st.markdown(f'<div class="badge">✨ {badge}</div>', unsafe_allow_html=True)
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.markdown('<h3 style="color:#2E8B57;">🏆 Earned Achievements</h3>', unsafe_allow_html=True)
+    
+    if st.session_state.achievement_collection:
+        cols = st.columns(2)
+        for idx, badge in enumerate(st.session_state.achievement_collection):
+            with cols[idx % 2]:
+                badge_img = create_turtle_badge(badge_type="eco" if idx%3==0 else "savings" if idx%3==1 else "impact")
+                st.image(badge_img, use_column_width=True)
+                st.markdown(f'<div class="eco-badge" style="justify-content:center;">{badge}</div>', unsafe_allow_html=True)
     else:
-        st.info("No badges yet. Make eco-friendly purchases to earn badges!")
+        st.info("Make sustainable purchases to unlock achievements!")
+        
+        sample_badge = create_turtle_badge()
+        st.image(sample_badge, caption="Sample Achievement Badge", use_column_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 with col2:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("📊 Live Impact Dashboard")
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.markdown('<h3 style="color:#2E8B57;">📊 Impact Dashboard</h3>', unsafe_allow_html=True)
     
-    if st.session_state.purchases:
-        df = pd.DataFrame(st.session_state.purchases)
-        df['date'] = pd.to_datetime(df['date'])
+    if st.session_state.purchase_history:
+        df_purchases = pd.DataFrame(st.session_state.purchase_history)
+        df_purchases['timestamp'] = pd.to_datetime(df_purchases['timestamp'])
         
-        total_spent = df['price'].sum()
-        total_co2 = df['co2_kg'].sum()
-        avg_co2_per_dollar = round(total_co2 / total_spent, 3) if total_spent > 0 else 0
+        total_expenditure = df_purchases['amount'].sum()
+        total_emissions = df_purchases['co2'].sum()
+        avg_efficiency = total_emissions / total_expenditure if total_expenditure > 0 else 0
         
         col_a, col_b, col_c = st.columns(3)
         with col_a:
-            st.metric("Total Spent", f"${total_spent:.0f}")
+            st.markdown('<p style="text-align:center; margin-bottom:0;">Total Spending</p>', unsafe_allow_html=True)
+            st.markdown(f'<h2 class="impact-number" style="text-align:center;">${total_expenditure:.0f}</h2>', unsafe_allow_html=True)
         with col_b:
-            st.metric("Total CO₂ Impact", f"{total_co2:.1f} kg")
+            st.markdown('<p style="text-align:center; margin-bottom:0;">CO₂ Emissions</p>', unsafe_allow_html=True)
+            st.markdown(f'<h2 class="impact-number" style="text-align:center;">{total_emissions:.1f}kg</h2>', unsafe_allow_html=True)
         with col_c:
-            st.metric("Efficiency", f"{avg_co2_per_dollar} kg/$")
+            st.markdown('<p style="text-align:center; margin-bottom:0;">Efficiency</p>', unsafe_allow_html=True)
+            st.markdown(f'<h2 class="positive-impact" style="text-align:center; font-size:2.5rem;">{avg_efficiency:.2f}kg/$</h2>', unsafe_allow_html=True)
         
-        monthly = df.groupby(df['date'].dt.to_period('M')).agg({'price':'sum', 'co2_kg':'sum'}).tail(6)
-        st.bar_chart(monthly['co2_kg'])
+        st.markdown('<div class="co2-meter"><div class="meter-fill" style="width:70%;"></div></div>', unsafe_allow_html=True)
         
-        recent = df.tail(5)
-        st.dataframe(recent[['date', 'product', 'brand', 'price', 'co2_kg']].style.format({'price':'${:.1f}', 'co2_kg':'{:.1f} kg'}))
+        category_data = df_purchases.groupby('category')['co2'].sum().to_dict()
+        fig_chart = generate_radial_chart(category_data)
+        st.plotly_chart(fig_chart, use_container_width=True)
+        
+        st.markdown("**Recent Purchases:**")
+        recent_data = df_purchases.tail(5)[['timestamp', 'category', 'brand', 'amount', 'co2']]
+        st.dataframe(recent_data.style.format({'amount':'${:.1f}', 'co2':'{:.1f} kg'}))
     else:
-        st.info("No purchases yet. Add your first purchase to see your impact!")
+        st.info("Start logging purchases to see your environmental impact dashboard.")
+        
+        sample_data = {"Fashion": 45, "Electronics": 30, "Food": 25}
+        fig_sample = generate_radial_chart(sample_data)
+        st.plotly_chart(fig_sample, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
     
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("🌿 Greener Alternatives")
-    selected = st.selectbox("Product Category", list(greener_alternatives.keys()))
-    st.write("Consider these sustainable options:")
-    for alt in greener_alternatives[selected]:
-        st.markdown(f"✅ {alt}")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-with col3:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("💭 Motivational Tips")
-    quote = random.choice(st.session_state.motivational_quotes)
-    st.markdown(f'<div style="font-size:1.4rem; color:#5D4037; padding:20px; text-align:center; background:#FFF8E1; border-radius:15px;">{quote}</div>', unsafe_allow_html=True)
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.markdown('<h3 style="color:#2E8B57;">🌍 Sustainable Alternatives</h3>', unsafe_allow_html=True)
     
-    if st.button("Get New Tip"):
-        st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+    selected_category = st.selectbox("Explore Category", list(sustainable_brands.keys()), key="alt_select")
     
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("🎨 Eco Animation")
-    animation_type = st.radio("Choose animation", ["Growing Tree", "CO₂ Reduction", "Happy Earth"])
-    
-    if animation_type == "Growing Tree":
-        st.markdown("""
-        <div style="text-align:center;">
-            <div style="font-size:4rem; animation: pulse 1.5s infinite;">🌳</div>
-            <p>Your purchases are planting virtual trees!</p>
-        </div>
-        """, unsafe_allow_html=True)
-    elif animation_type == "CO₂ Reduction":
-        st.markdown("""
-        <div style="text-align:center;">
-            <div style="font-size:4rem;">📉</div>
-            <p>Your footprint is decreasing!</p>
-        </div>
-        """, unsafe_allow_html=True)
-    else:
-        st.markdown("""
-        <div style="text-align:center;">
-            <div style="font-size:4rem; animation: pulse 2s infinite;">😊</div>
-            <p>The Earth is smiling because of you!</p>
-        </div>
-        """, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("⚙️ Settings")
-    dark_mode = st.checkbox("Dark Mode (Simulated)")
-    if dark_mode:
-        st.markdown('<style>body {background-color: #121212; color: white;}</style>', unsafe_allow_html=True)
+    if selected_category in sustainable_brands:
+        alternatives = sustainable_brands[selected_category]
+        
+        st.markdown("**Recommended Sustainable Brands:**")
+        for alt in alternatives:
+            col_x, col_y = st.columns([1, 4])
+            with col_x:
+                st.markdown("✅")
+            with col_y:
+                st.markdown(f"**{alt}**")
+        
+        reduction_potential = len(st.session_state.purchase_history) * 2.3
+        st.markdown(f'<div style="background:#E8F5E9; padding:15px; border-radius:10px; margin-top:15px;">📈 Potential CO₂ Reduction: **{reduction_potential:.1f}kg** with sustainable choices</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-if st.session_state.purchases:
-    co2_total = sum(p['co2_kg'] for p in st.session_state.purchases)
-    if co2_total < 100 and "Eco Saver" not in st.session_state.badges:
-        st.session_state.badges.append("Eco Saver")
-        st.sidebar.success("🏆 New Badge Unlocked: Eco Saver!")
-    
-    eco_count = sum(1 for p in st.session_state.purchases if p['multiplier'] < 1.8)
-    if eco_count >= 5 and "Green Warrior" not in st.session_state.badges:
-        st.session_state.badges.append("Green Warrior")
-        st.sidebar.success("🏆 New Badge Unlocked: Green Warrior!")
+st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+st.markdown('<h3 style="color:#2E8B57; text-align:center;">🎨 Interactive Turtle Graphics</h3>', unsafe_allow_html=True)
 
-st.sidebar.markdown("---")
-st.sidebar.info("**ShopImpact** v1.0 | Deploy your own on [Streamlit Cloud](https://streamlit.io/cloud)")
+graphic_col1, graphic_col2, graphic_col3 = st.columns(3)
+
+with graphic_col1:
+    st.markdown('<div class="turtle-canvas">', unsafe_allow_html=True)
+    st.markdown("**Eco Leaf Generator**")
+    if st.button("Generate Leaf", key="leaf_btn"):
+        leaf_art = create_turtle_eco_leaf(80)
+        st.image(leaf_art, use_column_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with graphic_col2:
+    st.markdown('<div class="turtle-canvas">', unsafe_allow_html=True)
+    st.markdown("**Carbon Footprint**")
+    if st.button("Show Footprint", key="footprint_btn"):
+        footprint_art = create_turtle_footprint(60)
+        st.image(footprint_art, use_column_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with graphic_col3:
+    st.markdown('<div class="turtle-canvas">', unsafe_allow_html=True)
+    st.markdown("**Achievement Badge**")
+    badge_choice = st.selectbox("Badge Type", ["eco", "savings", "impact"], key="badge_select")
+    if st.button("Create Badge", key="badge_btn"):
+        badge_art = create_turtle_badge(50, badge_choice)
+        st.image(badge_art, use_column_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+st.markdown('<h3 style="color:#2E8B57;">💭 Daily Inspiration</h3>', unsafe_allow_html=True)
+
+current_message = inspirational_messages[rd.randint(0, len(inspirational_messages)-1)]
+st.markdown(f'<div style="font-size:1.6rem; text-align:center; padding:25px; background:linear-gradient(135deg, #FFF8E1, #FFECB3); border-radius:15px; border:2px dashed #FFB300;">{current_message}</div>', unsafe_allow_html=True)
+
+if st.button("Refresh Inspiration", key="inspire_btn"):
+    st.rerun()
+st.markdown('</div>', unsafe_allow_html=True)
+
+if st.session_state.purchase_history:
+    total_co2 = sum(p['co2'] for p in st.session_state.purchase_history)
+    eco_purchases = sum(1 for p in st.session_state.purchase_history if p['multiplier'] < 2.0)
+    
+    if total_co2 < 150 and "Carbon Crusader" not in st.session_state.achievement_collection:
+        st.session_state.achievement_collection.append("Carbon Crusader")
+        st.toast("🏆 New Achievement: Carbon Crusader!", icon="🎉")
+    
+    if eco_purchases >= 5 and "Green Visionary" not in st.session_state.achievement_collection:
+        st.session_state.achievement_collection.append("Green Visionary")
+        st.toast("🏆 New Achievement: Green Visionary!", icon="🌟")
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+st.markdown("""
+<div style="text-align:center; margin-top:40px; padding:20px; border-top:2px solid #2E8B57;">
+    <p style="color:#556B2F; font-size:0.9rem;">
+        ShopImpact v2.0 • Built with Streamlit & Turtle Graphics • 
+        <a href="https://streamlit.io/cloud" style="color:#2E8B57; text-decoration:none;">Deploy on Streamlit Cloud</a>
+    </p>
+</div>
+""", unsafe_allow_html=True)
